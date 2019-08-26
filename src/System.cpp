@@ -18,7 +18,7 @@ namespace myslam
         }
         //todo 1 Load ORB Vocabulary
         mpVocabulary = new ORBVocabulary();
-        bool bVocLoad = mpVocabulary->loadFromTextFile("/home/zss/ORB_SLAM2/Vocabulary/ORBvoc.txt");
+        bool bVocLoad = mpVocabulary->loadFromTextFile("/home/yubao/data/Project/SLAM/semantic_slam-zssjh/Vocabulary/ORBvoc.txt");
         if (!bVocLoad)
         {
             cerr << "Falied to open vocabulary" << endl;

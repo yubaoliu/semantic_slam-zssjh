@@ -10,8 +10,8 @@
 #include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
 #include "Converter.h"
-#include<Eigen/StdVector>
-#include<mutex>
+#include <Eigen/StdVector>
+#include <mutex>
 #include "Object.h"
 #include "g2o_line_edge.h"
 
@@ -469,11 +469,14 @@ namespace myslam
                 e->setRobustKernel(rk);
                 rk->setDelta(deltaMono);
 
-                e->start_point=pFrame->F_Point[j];
-                e->end_point=pFrame->E_Point[j];
+                // e->start_point=pFrame->F_Point[j];
+                // e->end_point=pFrame->E_Point[j];
+                e->start_point_camera=pFrame->F_Point[j];
+                e->end_point_camera=pFrame->E_Point[j];
 
                 e->line_world=pFrame->LineVector6d[j];
                 e->line_camera=pFrame->LineVector6d_pro_camera[j];
+
 //                e->start_point_camera=pFrame->F_Point_camera[j];
 //                e->end_point_camera=pFrame->E_Point_camera[j];
                 e->fx = pFrame->fx;

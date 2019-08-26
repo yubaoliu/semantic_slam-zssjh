@@ -1,0 +1,11 @@
+{
+    "cmake.debugConfig": {
+        "args": [
+            "${workspaceFolder}/desk2_yolo.txt",
+            "${workspaceFolder}/Examples/RGB-D/TUM1.yaml",
+            "~/data/Dataset/TUM/freiburg1/rgbd_dataset_freiburg1_room",
+            "~/data/Dataset/TUM/freiburg1/rgbd_dataset_freiburg1_room/associations.txt"
+
+        ]
+    }
+}

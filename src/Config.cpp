@@ -24,6 +24,7 @@ namespace myslam
                 vstrImageFilenamesRGB.push_back(sRGB);
                 //cout<<"t1="<<std::fixed<<t<<endl;
                 //cout<<"sRGB="<<sRGB<<endl;
+                
                 ss >> t;
                 ss >> sD;
                 vstrImageFilenamesD.push_back(sD);
@@ -63,7 +64,9 @@ namespace myslam
     void Detections_Align_To_File(vector<string> vstrImageFilenamesRGB,int nImages,vector<vector<int>> &yolo_mat,vector<vector<int>> &yolo_mat2)
     {
         ifstream infile;
-        infile.open("/home/zss/myslam/Filename_desk.txt");
+        infile.open("/home/yubao/data/Project/SLAM/semantic_slam-zssjh/Filename_desk2.txt");
+        //infile.open("/home/yubao/data/Dataset/TUM/freiburg1/rgbd_dataset_freiburg1_room/filename.txt");
+       // infile.open("/home/yubao/data/Dataset/TUM/freiburg1/rgbd_dataset_freiburg1_room/rgb.txt");
         if(!infile.is_open())
         {
             cout<<"Filename open fail"<<endl;

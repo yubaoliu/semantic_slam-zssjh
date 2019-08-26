@@ -157,6 +157,8 @@ namespace g2o {
 
         Vector6d line_world;//// Lw=[nw,vw]
 //        Vector6d line_camera;//// Lc=[nc,vc]
+        Vector6d line_camera;//// Lc=[nc,vc]
+
         Vector3d Line;
 //        Vector3d p_w;
 //        Vector3d q_w;

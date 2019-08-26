@@ -12,7 +12,14 @@ int main(int argc, char **argv)
 {
     if(argc != 5)
     {
-        cerr << endl << "Usage: ./rgbd_tum path_to_vocabulary path_to_settings path_to_sequence path_to_association" << endl;
+        /*Examples/RGB-D/rgbd_tum 
+        desk2_yolo.txt 
+        Examples/RGB-D/TUM1.yaml 
+        ~/data/Dataset/TUM/freiburg1/rgbd_dataset_freiburg1_room
+        ~/data/Dataset/TUM/freiburg1/rgbd_dataset_freiburg1_room/associations.txt
+        */
+        cout<<"argc: "<<argc<<endl;
+        cerr << endl << "Usage: ./rgbd_tum yolo.txt path_to_vocabulary path_to_settings path_to_sequence path_to_association" << endl;
         return 1;
     }
     //todo 1 import images
@@ -35,10 +42,10 @@ int main(int argc, char **argv)
     //todo 2 import detections
     vector <vector<int>> yolo_mat;
 
-    myslam::LoadDetections(argv[1],yolo_mat);
+    myslam::LoadDetections(argv[1], yolo_mat);
 
     //todo 3 check detections
-    myslam::Detections_Align_To_File(vstrImageFilenamesRGB,nImages,yolo_mat,yolo_mat2);
+    myslam::Detections_Align_To_File(vstrImageFilenamesRGB, nImages, yolo_mat, yolo_mat2);
 
     //todo 4 creat SLAM system initialization
     myslam::System SLAM(argv[2]);
