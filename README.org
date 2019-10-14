@@ -1,0 +1,266 @@
+
+
+
+https://user-images.githubusercontent.com/17697584/59835433-99fd6f00-9384-11e9-91b1-4ef0446fda27.png
+
+
+* RUN
+- Modify PATH
+#+begin_example
+./src/Config.cpp:        infile.open("/home/yubao/data/Project/SLAM/semantic_slam-zssjh/Filename_desk2.txt");
+#+end_example
+
+
+- RUN
+#+begin_example
+/Examples/RGB-D/rgbd_tum desk2_yolo.txt Examples/RGB-D/TUM1.yaml ~/data/Dataset/TUM/freiburg1/rgbd_dataset_freiburg1_desk2 ~/data/Dataset/TUM/freiburg1/rgbd_dataset_freiburg1_desk2/associations.txt
+#+end_example
+
+* Note
+** Software Flow
+#+begin_example cpp
+semantic_slam-zssjh/Examples/RGB-D/rgbd_tum.cc
+#+end_example
+-  
+#+begin_example cpp
+cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp)
+#+end_example
+
+- 
+#+begin_example cpp
+cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp)
+#+end_example
+
+- 
+#+begin_example cpp
+void Tracking::Track(const cv::Mat &imRGB,const cv::Mat &imD)
+#+end_example
+
+
+** Object.h
+#+begin_example cpp
+    class Object
+   {
+   public:
+       Object(const cv::Mat &Pos,const int class_id,float x, float y);
+
+    public:
+        int mnId;
+        int LastAddId;
+         cv::Mat _Pos;
+
+        const int _class_id;
+        bool First_obj;
+        int confidence;
+        int add_id;
+        bool bad;
+        bool current;
+        vector< MapPoint*>  MapPonits;
+        vector< MapPoint*>  pro_MapPonits;
+        vector<cv::Mat> pro_MapPoints_camera;
+        vector< MapPoint*>  co_MapPonits;
+
+        float left;
+        float right;
+        float top;
+        float bottom;
+   };
+
+#+end_example
+
+** Object.cpp
+#+begin_example cpp
+Object::Object(const cv::Mat &Pos, const int class_id, float x, float y) : mnId(0), _Pos(Pos), _class_id(class_id), confidence(0), add_id(0), bad(false), left(0), right(0), top(0), bottom(0), LastAddId(0), current(false)
+{
+    Pos.copyTo(_Pos);
+}
+#+end_example
+
+** Point.h
+#+begin_example cpp
+class K_Keypoint
+{
+public:
+    K_Keypoint(cv::KeyPoint kp, double depthval, bool background) : kp(kp), depthval(depthval), background(background) {}
+
+public:
+    double depthval;
+    cv::KeyPoint kp;
+    bool background;
+};
+#+end_example
+** =include/g2o_line_edge.h=
+** MapDrawer.cpp
+#+begin_example cpp
+void MapDrawer::Drawobject3Dbox(pangolin::OpenGlMatrix &Twc)
+void MapDrawer::Drawlinebetweenobjects(pangolin::OpenGlMatrix &Twc)
+void MapDrawer::DrawMapPoints()
+#+end_example
+** Optimizer.cpp
+#+begin_example cpp
+int Optimizer::ComputeObjectCenter(Frame *pFrame)
+int Optimizer::PoseOptimization(Frame *pFrame)
+#+end_example
+
+** Frame.h
+#+begin_example cpp
+vector<Object*> get_frame_object(const cv::Mat &imRGB,const cv::Mat &imdepth);
+void get_object_feature();
+bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit) //tracking-searchlocalpoints
+#+end_example
+
+#+begin_src cpp
+vector<Object *> Frame::get_frame_object(const cv::Mat &imRGB, const cv::Mat &imdepth)
+{
+    vector<Object *> objs;
+    float u_max = 0;
+    float v_max = 0;
+    int num_kp = 0;
+    for (int i = 0; i < yolo_mat2.size(); ++i)
+    {
+        if (yolo_mat2[i][0] == this->mnId)
+        {
+            int class_id;
+            cv::Mat x3D;
+            class_id = yolo_mat2[i][2];
+
+            //上下左右
+            int left = yolo_mat2[i][3];
+            int right = yolo_mat2[i][4];
+            int top = yolo_mat2[i][5];
+            int bottom = yolo_mat2[i][6];
+
+            string name;
+            if (class_id == 73)
+                name = "book";
+            else if (class_id == 66)
+                name = "keyboard";
+            else if (class_id == 64)
+                name = "mouse";
+            else if (class_id == 62)
+                name = "tvmonitor";
+            else if (class_id == 41)
+                name = "cup";
+            else if (class_id == 56)
+                name = "chair";
+            else if (class_id == 67)
+                name = "cell phone";
+            else if (class_id == 65)
+                name = "remote";
+
+            cv::line(image, cv::Point2f(left, top), cv::Point2f(right, top), cv::Scalar(100, 256, 0), 1.5);       ///bgr
+            cv::line(image, cv::Point2f(left, top), cv::Point2f(left, bottom), cv::Scalar(100, 256, 0), 1.5);     ///bgr
+            cv::line(image, cv::Point2f(right, top), cv::Point2f(right, bottom), cv::Scalar(100, 256, 0), 1.5);   ///bgr
+            cv::line(image, cv::Point2f(left, bottom), cv::Point2f(right, bottom), cv::Scalar(100, 256, 0), 1.5); ///bgr
+            cv::putText(image, name, cv::Point2f(left + 3, top + 11), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(100, 256, 0), 1);
+
+            cv::Point2f middle_point;
+            float x;
+            float y;
+            float u = middle_point.x = (right + left) / 2;
+            float v = middle_point.y = (bottom + top) / 2;
+            //                cv::circle(image,cv::Point2f(u,v),5,cv::Scalar(256,100,0),-1);
+            //                cv::putText(image,"1", cv::Point2f(u,v), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255,255,0), 1);
+
+            float dmax = 0;
+            float d;
+            for (int i = v - 5; i < v + 5; i++) //y
+            {
+                for (int j = u - 5; j < u + 5; j++) //x
+                {
+                    d = imdepth.at<float>(i, j);
+                    //cout<<d<<endl;
+                    if (d > dmax) //todo 后续可以改成有深度值的
+                    {
+                        dmax = d;
+                        u_max = j;
+                        v_max = i;
+                    }
+                    else
+                        continue;
+                }
+            }
+
+            d = dmax;
+            x = (u_max - this->cx) * d * this->invfx; //相机坐标系
+            y = (v_max - this->cy) * d * this->invfy;
+
+            if (d == 0)
+            {
+                //cout<<"!!!"<<endl;
+                continue;
+            }
+            cv::Mat x3Dc;
+            //cout<<"深度"<<d<<endl;
+            x3Dc = (cv::Mat_<float>(3, 1) << x, y, d);
+            x3D = mRwc * x3Dc + mOw;
+            //cout<<"深度："<<x3D.at<float>(2,0)<<endl;
+            Object *obj = new Object(x3D, class_id, u_max, v_max);
+            obj->_Pos = x3D;
+            obj->left = yolo_mat2[i][3];
+            obj->right = yolo_mat2[i][4];
+            obj->top = yolo_mat2[i][5];
+            obj->bottom = yolo_mat2[i][6];
+            objs.push_back(obj);
+        }
+    }
+    return objs;
+}
+#+end_src
+
+#+begin_src cpp
+bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit) //tracking-searchlocalpoints
+{
+    //TODO 策略1：将MapPoint投影到当前帧, 并判断是否在图像内。
+    //TODO 策略2：计算MapPoint到相机中心的距离, 并判断是否在尺度变化的距离内。
+    //TODO 策略3：计算当前视角和平均视角夹角(CreateInitialMapMonocular的UpdateNormalAndDepth的函数计算得到)的余弦值, 若小于cos(60), 即夹角大于60度则返回。
+    //TODO 最后根据深度预测尺度（对应特征点在一层），并标记该点将来要被投影(在函数SearchByProjection中被使用)。如果以上条件满足就代表当前的地图点在视野里。
+
+    pMP->mbTrackInView = false;
+
+    // 3D in absolute coordinates
+    cv::Mat P = pMP->GetWorldPos();
+
+    // 3D in camera coordinates
+    const cv::Mat Pc = mRcw * P + mtcw;
+    const float &PcX = Pc.at<float>(0);
+    const float &PcY = Pc.at<float>(1);
+    const float &PcZ = Pc.at<float>(2);
+
+    // Check positive depth
+    if (PcZ < 0.0f)
+        return false;
+
+    // Project in image and check it is not outside
+    const float invz = 1.0f / PcZ;
+    const float u = fx * PcX * invz + cx;
+    const float v = fy * PcY * invz + cy;
+
+    if (u < mnMinX || u > mnMaxX)
+        return false;
+    if (v < mnMinY || v > mnMaxY)
+        return false;
+    // Check distance is in the scale invariance region of the MapPoint
+    const float maxDistance = pMP->GetMaxDistanceInvariance();
+    const float minDistance = pMP->GetMinDistanceInvariance();
+    const cv::Mat PO = P - mOw;
+    const float dist = cv::norm(PO);
+    if (dist < minDistance || dist > maxDistance)
+        return false;
+    // Check viewing angle
+    cv::Mat Pn = pMP->GetNormal();
+    const float viewCos = PO.dot(Pn) / dist;
+    if (viewCos < viewingCosLimit)
+        return false;
+    // Predict scale in the image
+    const int nPredictedLevel = pMP->PredictScale(dist, this);
+    // Data used by the tracking
+    pMP->mbTrackInView = true;
+    pMP->mTrackProjX = u;
+    pMP->mTrackProjXR = u - mbf * invz;
+    pMP->mTrackProjY = v;
+    pMP->mnTrackScaleLevel = nPredictedLevel;
+    pMP->mTrackViewCos = viewCos;
+    return true;
+}
+#+end_src

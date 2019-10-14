@@ -2,16 +2,14 @@
 // Created by zss on 18-3-15.
 //
 
-
 #ifndef COMMON_INCLUDE_H
 #define COMMON_INCLUDE_H
-
 
 // for cv
 #include <opencv2/core/core.hpp>
 using cv::Mat;
 
-// std 
+// std
 #include <vector>
 #include <list>
 #include <memory>
@@ -20,6 +18,7 @@ using cv::Mat;
 #include <set>
 #include <unordered_map>
 #include <map>
+#include <glog/logging.h>
 using namespace std;
 
 #endif

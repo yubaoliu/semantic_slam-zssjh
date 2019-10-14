@@ -19,7 +19,7 @@ namespace myslam
             mState(NO_IMAGES_YET), mbOnlyTracking(false),mpORBVocabulary(pVoc), mpKeyFrameDB(pKFDB),mpSystem(pSys), mpViewer(NULL),
             mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0),Good_Frame(true)
     {
-        //todo 1 Load camera parameters
+        //TODO 1 Load camera parameters
         cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
         float fx = fSettings["Camera.fx"];
         float fy = fSettings["Camera.fy"];
@@ -53,7 +53,7 @@ namespace myslam
         mMaxFrames = fps;
 
 
-        //todo 2 load ORB parameters and initialization
+        //TODO 2 load ORB parameters and initialization
         int nFeatures = fSettings["ORBextractor.nFeatures"];
         float fScaleFactor = fSettings["ORBextractor.scaleFactor"];
         int nLevels = fSettings["ORBextractor.nLevels"];
@@ -61,7 +61,7 @@ namespace myslam
         int fMinThFAST = fSettings["ORBextractor.minThFAST"];
         mpORBextractor = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
 
-        //todo 3 load depth scale parameters
+        //TODO 3 load depth scale parameters
         mThDepth = mbf*(float)fSettings["ThDepth"]/fx;
         mDepthMapFactor = fSettings["DepthMapFactor"];
         if(fabs(mDepthMapFactor)<1e-5)
@@ -119,10 +119,10 @@ namespace myslam
                     min=sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
                 }
             }
-
         }
         return min;
     }
+
     float Tracking::meandistance(cv::Mat mean,cv::Mat pos)
     {
         float x = mean.at<float>(0, 0) - pos.at<float>(0, 0);
@@ -130,22 +130,23 @@ namespace myslam
         float z = mean.at<float>(2, 0) - pos.at<float>(2, 0);
         return sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
     }
+    
     cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp)
     {
-        //todo 1 load a pair of images
+        //TODO 1 load a pair of images
         mImGray = imRGB;
         cv::Mat imDepth = imD;
         cvtColor(mImGray,mImGray,CV_RGB2GRAY);
         if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
             imDepth.convertTo(imDepth,CV_32F,mDepthMapFactor);
-        //todo 2 create current frame
+        //TODO 2 create current frame
         AppearNewObject=false;
         Good_Frame=true;
 
-        mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractor,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
-        mCurrentFrame.image=imRGB.clone();
+        mCurrentFrame = Frame(mImGray, imDepth, timestamp, mpORBextractor,mpORBVocabulary, mK, mDistCoef, mbf, mThDepth);
+        mCurrentFrame.image = imRGB.clone();
 
-        //todo 3 track
+        //TODO  3 track
         Track(mImGray,imDepth);
 
         vector<MapPoint*> vpMPs = mpMap->GetAllMapPoints();
@@ -158,39 +159,39 @@ namespace myslam
             }
         }
 
-        //todo 4 return mTcw
+        //TODO  4 return mTcw
         return mCurrentFrame.mTcw.clone();
     }
 
     void Tracking::Track(const cv::Mat &imRGB,const cv::Mat &imD)
     {
 
-        //todo 1 initialized
-        if(mState==NO_IMAGES_YET)
+        //TODO  1 initialized
+        if(mState == NO_IMAGES_YET)
         {
             mState = NOT_INITIALIZED;
         }
         mLastProcessedState=mState;
         // Get Map Mutex -> Map cannot be changed
         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
-        if(mState==NOT_INITIALIZED)
+        if(mState == NOT_INITIALIZED)
         {
-            StereoInitialization(imRGB,imD);
+            StereoInitialization(imRGB, imD);
             mpFrameDrawer->Update(this);
             if(mState!=OK)
                 return;
         }
-        //todo 2 track
+        //TODO  2 track
         else
         {
-            //todo 2.1 track frame
+            //TODO  2.1 track frame
             bool bOK;
             if(mState==OK)
             {
-                //todo 检查并更新上一帧被替换的MapPoints
-                //todo 更新Fuse函数和SearchAndFuse函数替换的MapPoints
-                //todo Local Mapping might have changed some MapPoints tracked in last frame
-                //todo CheckReplacedInLastFrame() 最后一帧地图点是否有替换点有替换点的则进行替换
+                //TODO 检查并更新上一帧被替换的MapPoints
+                //TODO 更新Fuse函数和SearchAndFuse函数替换的MapPoints
+                //TODO Local Mapping might have changed some MapPoints tracked in last frame
+                //TODO CheckReplacedInLastFrame() 最后一帧地图点是否有替换点有替换点的则进行替换
                 CheckReplacedInLastFrame();
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
@@ -209,9 +210,9 @@ namespace myslam
             {
                 bOK = Relocalization();
             }
-            mCurrentFrame.mpReferenceKF = mpReferenceKF;//todo 当前帧的参考关键帧是局部地图的参考关键帧
+            mCurrentFrame.mpReferenceKF = mpReferenceKF; //TODO  当前帧的参考关键帧是局部地图的参考关键帧
 
-            //todo 2.2 track local map
+            //TODO  2.2 track local map
             if(bOK)
             {
                 std::chrono::steady_clock::time_point t1 = std::chrono ::steady_clock::now();
@@ -228,7 +229,7 @@ namespace myslam
                 mState=LOST;
             mpFrameDrawer->Update(this);
 
-            //todo 2.3 insert keyframes
+            //TODO 2.3 insert keyframes
 
             if(bOK)
             {
@@ -241,7 +242,7 @@ namespace myslam
                 }
                 else
                     mVelocity = cv::Mat();
-                mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);//////////todo 为了画图//////////
+                mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw); //TODO  为了画图
                 for(int i=0; i<mCurrentFrame.N; i++)
                 {
                     MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
@@ -252,7 +253,7 @@ namespace myslam
                             mCurrentFrame.mvpMapPoints[i]=static_cast<MapPoint*>(NULL);
                         }
                 }
-                // todo Delete temporal MapPoints
+                // TODO  Delete temporal MapPoints
                 for(list<MapPoint*>::iterator lit = mlpTemporalPoints.begin(), lend =  mlpTemporalPoints.end(); lit!=lend; lit++)
                 {
                     MapPoint* pMP = *lit;
@@ -260,11 +261,8 @@ namespace myslam
                 }
                 mlpTemporalPoints.clear();
                 if(NeedNewKeyFrame())
-
                 {
-
                     CreateNewKeyFrame();
-
                 }
                 for(int i=0; i<mCurrentFrame.N;i++)
                 {
@@ -273,7 +271,7 @@ namespace myslam
                 }
             }
 
-            //todo 2.4 Reset if the camera get lost soon after initialization
+            //TODO  2.4 Reset if the camera get lost soon after initialization
             if(mState==LOST)
             {
                 if(mpMap->KeyFramesInMap()<=5)
@@ -289,12 +287,12 @@ namespace myslam
             mLastFrame = Frame(mCurrentFrame);
         }
 
-        //todo 3 花轨迹  Store frame pose information to retrieve the complete camera trajectory afterwards.
+        //TODO  3 花轨迹  Store frame pose information to retrieve the complete camera trajectory afterwards.
         if(!mCurrentFrame.mTcw.empty())
         {
             cv::Mat Tcr = mCurrentFrame.mTcw*mCurrentFrame.mpReferenceKF->GetPoseInverse();
             //cout<<"参考关键帧："<<mCurrentFrame.mpReferenceKF->mnId<<endl;
-            //todo 当前相对于世界*世界相对于参考帧
+            //TODO 当前相对于世界*世界相对于参考帧
             mlRelativeFramePoses.push_back(Tcr);
             mlpReferences.push_back(mpReferenceKF);
             mlFrameTimes.push_back(mCurrentFrame.mTimeStamp);
@@ -305,26 +303,25 @@ namespace myslam
             // This can happen if tracking is lost
             mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
             mlpReferences.push_back(mlpReferences.back());
-            mlFrameTimes.push_back(mlFrameTimes.back());//todo 取最后一个元素
+            mlFrameTimes.push_back(mlFrameTimes.back());//TODO 取最后一个元素
             mlbLost.push_back(mState==LOST);
         }
-
     }
 
     void Tracking::StereoInitialization(const cv::Mat &imRGB,const cv::Mat imD)
     {
         if(mCurrentFrame.N>500)
         {
-            // todo Set Frame pose to the origin
+            // TODO Set Frame pose to the origin
             mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
             KeyFrame* pKFini = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
             mpMap->AddKeyFrame(pKFini);
-            //todo 获取每帧的物体
+            //TODO 获取每帧的物体
             cout<<"当前帧："<<mCurrentFrame.mnId<<endl;
             vector<Object*> objs;
             objs=mCurrentFrame.get_frame_object(imRGB,imD);
             //AppearNewObject=true;
-            //todo 获取每个物体的mappoint
+            //TODO 获取每个物体的mappoint
             for(int i=0; i<mCurrentFrame.N;i++)
             {
                 float z = mCurrentFrame.mvDepth[i];
@@ -357,7 +354,7 @@ namespace myslam
                             }
                         }
                     }
-                    pKFini->AddMapPoint(pNewMP,i);//todo 不是pushback有影响吗在前面在后面
+                    pKFini->AddMapPoint(pNewMP,i);//TODO 不是pushback有影响吗在前面在后面
                     pNewMP->ComputeDistinctiveDescriptors();
                     pNewMP->UpdateNormalAndDepth();
                     mpMap->AddMapPoint(pNewMP);
@@ -387,19 +384,19 @@ namespace myslam
                 mCurrentFrame.objects.push_back(objs[k]);
             }
             pKFini->objects=mCurrentFrame.objects;
-            //todo 更新上一帧
+            //TODO 更新上一帧
             mpLocalMapper->InsertKeyFrame(pKFini);
             mLastFrame = Frame(mCurrentFrame);
             mnLastKeyFrameId=mCurrentFrame.mnId;
             mpLastKeyFrame = pKFini;
 
-            //todo 跟踪局部地图
+            //TODO 跟踪局部地图
             mvpLocalKeyFrames.push_back(pKFini);
-            mvpLocalMapPoints=mpMap->GetAllMapPoints();//todo 因为第一帧之后没有跟踪局部地图，所以单独给赋值
+            mvpLocalMapPoints=mpMap->GetAllMapPoints();//TODO 因为第一帧之后没有跟踪局部地图，所以单独给赋值
             mpReferenceKF = pKFini;
             mCurrentFrame.mpReferenceKF = pKFini;
 
-            //todo 为了画图
+            //TODO 为了画图
             mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
             mpMap->mvpKeyFrameOrigins.push_back(pKFini);
             mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
@@ -425,23 +422,23 @@ namespace myslam
 
     bool Tracking::TrackReferenceKeyFrame(const cv::Mat &imRGB,const cv::Mat imD)
     {
-        //todo 1 compute BOW
+        //TODO 1 compute BOW
         mCurrentFrame.ComputeBoW();
-        //todo 2 ORB matching
+        //TODO 2 ORB matching
         ORBmatcher matcher(0.7,true);
         vector<MapPoint*> vpMapPointMatches;
         int nmatches = matcher.SearchByBoW(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
         if(nmatches<15)
             return false;
-        //todo 3 PoseOptimization
+        //TODO 3 PoseOptimization
         mCurrentFrame.mvpMapPoints = vpMapPointMatches;
         mCurrentFrame.SetPose(mLastFrame.mTcw);
-        //todo 获取每帧物体
+        //TODO 获取每帧物体
         cout<<"当前帧："<<mCurrentFrame.mnId<<endl;
         vector<Object*> objs;
         objs=mCurrentFrame.get_frame_object(imRGB,imD);
 
-        //todo 获取每个物体的mappoint
+        //TODO 获取每个物体的mappoint
 
         int num2=0;
         for (int k = 0; k <objs.size() ; ++k)
@@ -461,11 +458,11 @@ namespace myslam
                     {
                         continue;
                     }
-                    else//todo 重复物体出现
+                    else//TODO 重复物体出现
                     {
                         _num2++;
 
-                        if( mpMap->objs_real[i]->LastAddId!=mCurrentFrame.mnId)//todo 为了防止同一帧同一个物体加两次
+                        if( mpMap->objs_real[i]->LastAddId!=mCurrentFrame.mnId)//TODO 为了防止同一帧同一个物体加两次
                         {
                             mpMap->objs_real[i]->LastAddId=mCurrentFrame.mnId;
                             mpMap->objs_real[i]->confidence++;
@@ -479,7 +476,7 @@ namespace myslam
                 else
                     continue;
             }
-            if (_num == 0 || _num2 == 0)//todo 出现新物体
+            if (_num == 0 || _num2 == 0)//TODO 出现新物体
             {
                 AppearNewObject = true;
                 objs[k]->mnId = mpMap->objs_real.size();
@@ -503,7 +500,7 @@ namespace myslam
                     {
                         if(object_num.count(objs[k]->mnId))
                             continue;
-                        if (mCurrentFrame.mvKeysUn[i].pt.x > objs[k]->left &&//todo 这个计算的是当前帧的
+                        if (mCurrentFrame.mvKeysUn[i].pt.x > objs[k]->left &&//TODO 这个计算的是当前帧的
                             mCurrentFrame.mvKeysUn[i].pt.x < objs[k]->right &&
                             mCurrentFrame.mvKeysUn[i].pt.y > objs[k]->top &&
                             mCurrentFrame.mvKeysUn[i].pt.y < objs[k]->bottom)
@@ -519,7 +516,7 @@ namespace myslam
                                 {
                                     cv::Mat pro_x3D=mCurrentFrame.UnprojectStereo(i);/////for 画图
                                     cv::Mat pro_x3Dc=mCurrentFrame.UnprojectStereo_camera(i);
-                                    MapPoint* pro_MP = new MapPoint(pro_x3D,mpMap,&mCurrentFrame,i);//todo 只有这里使用帧创建地图点而不是关键帧
+                                    MapPoint* pro_MP = new MapPoint(pro_x3D,mpMap,&mCurrentFrame,i);//TODO 只有这里使用帧创建地图点而不是关键帧
                                     objs[k]->pro_MapPonits.push_back(pro_MP);
                                     objs[k]->pro_MapPoints_camera.push_back(pro_x3Dc);///for 优化
                                     objs[k]->co_MapPonits.push_back(pMP);
@@ -534,7 +531,7 @@ namespace myslam
                                 {
                                     int sit_sec=sit->second;
                                     pMP->object_id_vector.erase(pMP->object_id);
-                                    pMP->object_id_vector.insert(make_pair(pMP->object_id, sit_sec+1));//todo 观测次数不对
+                                    pMP->object_id_vector.insert(make_pair(pMP->object_id, sit_sec+1));//TODO 观测次数不对
                                 }
                                 else
                                 {
@@ -651,11 +648,11 @@ namespace myslam
 //        }
 
         cout<<"当前帧物体："<<mCurrentFrame.objects.size()<<endl;
-        //todo 4 Discard outliers
+        //TODO 4 Discard outliers
         return nmatchesMap>=10;
     }
 
-    void Tracking::UpdateLastFrame()//todo 在跟踪运动模型中，为了跟踪临时添加一些 mappoint
+    void Tracking::UpdateLastFrame()//TODO 在跟踪运动模型中，为了跟踪临时添加一些 mappoint
     {
         KeyFrame* pRef = mLastFrame.mpReferenceKF;
         cv::Mat Tlr = mlRelativeFramePoses.back();
@@ -698,7 +695,7 @@ namespace myslam
             if(bCreateNew)
             {
                 cv::Mat x3D = mLastFrame.UnprojectStereo(i);
-                MapPoint* pNewMP = new MapPoint(x3D,mpMap,&mLastFrame,i);//todo 只有这里使用帧创建地图点而不是关键帧
+                MapPoint* pNewMP = new MapPoint(x3D,mpMap,&mLastFrame,i);//TODO 只有这里使用帧创建地图点而不是关键帧
                 mLastFrame.mvpMapPoints[i]=pNewMP;
                 mlpTemporalPoints.push_back(pNewMP);
                 nPoints++;
@@ -716,14 +713,14 @@ namespace myslam
     bool Tracking::TrackWithMotionModel(const cv::Mat &imRGB,const cv::Mat imD)
     {
 
-        //todo 1 ORB matching
+        //TODO 1 ORB matching
         ORBmatcher matcher(0.9,true);
 
 
-        //todo 2 update last frame
+        //TODO 2 update last frame
         UpdateLastFrame();
 
-        //todo 3 update current frame
+        //TODO 3 update current frame
         mCurrentFrame.SetPose(mVelocity*mLastFrame.mTcw);
         fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
 
@@ -939,7 +936,7 @@ namespace myslam
                             sit = vpMPs[j]->object_id_vector.find(mpMap->objs_real[i]->mnId);
                             if(sit != vpMPs[j]->object_id_vector.end())
                             {
-                                vpMPs[j]->object_id_vector.erase(mpMap->objs_real[i]->mnId);//todo 处理删除掉的物体的点
+                                vpMPs[j]->object_id_vector.erase(mpMap->objs_real[i]->mnId);//TODO 处理删除掉的物体的点
                             }
                             for (int k = i; k <mpMap->objs_real.size() ; ++k)
                             {
@@ -948,12 +945,12 @@ namespace myslam
                                 if(sit1 != vpMPs[j]->object_id_vector.end())
                                 {
                                     vpMPs[j]->object_id_vector.erase(mpMap->objs_real[k]->mnId);
-                                    vpMPs[j]->object_id_vector.insert(make_pair(mpMap->objs_real[k]->mnId-1,sit1->second));//todo 删除到物体之后其余的点的号
+                                    vpMPs[j]->object_id_vector.insert(make_pair(mpMap->objs_real[k]->mnId-1,sit1->second));//TODO 删除到物体之后其余的点的号
                                 }
                             }
 
                         }
-                        mpMap->objs_real.erase(mpMap->objs_real.begin()+i);//todo 删除到物体之后其余的物体的号
+                        mpMap->objs_real.erase(mpMap->objs_real.begin()+i);//TODO 删除到物体之后其余的物体的号
                         for (int j = i; j <mpMap->objs_real.size() ; ++j)
                         {
                             mpMap->objs_real[j]->mnId-=1;
@@ -963,13 +960,13 @@ namespace myslam
             }
         }
 
-        //todo 4 Project points seen in previous frame
+        //TODO 4 Project points seen in previous frame
         int th=15;
         int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,mpMap,th);//去掉==单目
         if(nmatches<20)
         {
             fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
-            nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,mpMap,2*th);//todo //////////////在这剔除误匹配////////////////////
+            nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,mpMap,2*th);//TODO //////////////在这剔除误匹配////////////////////
         }
         if(nmatches<20)
             return false;
@@ -1007,7 +1004,7 @@ namespace myslam
                                 {
                                     cv::Mat pro_x3D=mCurrentFrame.UnprojectStereo(i);/////for 画图
                                     cv::Mat pro_x3Dc=mCurrentFrame.UnprojectStereo_camera(i);
-                                    MapPoint* pro_MP = new MapPoint(pro_x3D,mpMap,&mCurrentFrame,i);//todo 只有这里使用帧创建地图点而不是关键帧
+                                    MapPoint* pro_MP = new MapPoint(pro_x3D,mpMap,&mCurrentFrame,i);//TODO 只有这里使用帧创建地图点而不是关键帧
                                     objs[k]->pro_MapPonits.push_back(pro_MP);
                                     objs[k]->pro_MapPoints_camera.push_back(pro_x3Dc);///for 优化
                                     objs[k]->co_MapPonits.push_back(pMP);
@@ -1102,7 +1099,7 @@ namespace myslam
                     break;
             }
         }
-        //todo 5 Optimize frame pose with all matches
+        //TODO 5 Optimize frame pose with all matches
         Optimizer::cout_num=true;
         Optimizer::PoseOptimization(&mCurrentFrame);
         Optimizer::cout_num=false;
@@ -1149,13 +1146,13 @@ namespace myslam
 
     bool Tracking::TrackLocalMap()
     {
-        //todo 1 update local map
+        //TODO 1 update local map
         UpdateLocalMap();
 
-        //todo 2 Search Local Points
+        //TODO 2 Search Local Points
         SearchLocalPoints();
 
-        //todo 3 Optimize Pose
+        //TODO 3 Optimize Pose
 //        Optimizer::cout_num=true;
         Optimizer::PoseOptimization(&mCurrentFrame);
 
@@ -1229,7 +1226,7 @@ namespace myslam
         }
 //        cv::imshow("img",mCurrentFrame.image);
 //        cv::waitKey(0);
-        //todo 4 Discard outliers
+        //TODO 4 Discard outliers
         mnMatchesInliers = 0;
         for(int i=0; i<mCurrentFrame.N; i++)
         {
@@ -1266,15 +1263,15 @@ namespace myslam
         if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && nKFs>mMaxFrames)
             return false;
 
-        // todo Tracked MapPoints in the reference keyframe
+        // TODO Tracked MapPoints in the reference keyframe
         int nMinObs = 3;
         if(nKFs<=2)
             nMinObs=2;
-        int nRefMatches = mpReferenceKF->TrackedMapPoints(nMinObs);//todo 参考关键帧中地图点被三个以上关键帧观测的个数
+        int nRefMatches = mpReferenceKF->TrackedMapPoints(nMinObs);//TODO 参考关键帧中地图点被三个以上关键帧观测的个数
         // Local Mapping accept keyframes?
         bool bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames();
 
-        // todo Check how many "close" points are being tracked and how many could be potentially created.
+        // TODO Check how many "close" points are being tracked and how many could be potentially created.
         int nNonTrackedClose = 0;
         int nTrackedClose= 0;
         for(int i =0; i<mCurrentFrame.N; i++)
@@ -1287,24 +1284,24 @@ namespace myslam
                      nNonTrackedClose++;
                }
          }
-        bool bNeedToInsertClose = (nTrackedClose<100) && (nNonTrackedClose>70);//todo 什么东西
+        bool bNeedToInsertClose = (nTrackedClose<100) && (nNonTrackedClose>70);//TODO 什么东西
 
         // Thresholds
         float thRefRatio = 0.75f;
         if(nKFs<2)
             thRefRatio = 0.4f;
-        //todo condition 1（任意一个发生）:
-        //todo  a.很久没有新的关键帧了
-        //todo  b. LocalMapping空闲
-        //todo c.当前追踪不行了
-        //todo condition 2:
-        //todo  当前帧的MapPoint和ref keyframe重复率低
+        //TODO condition 1（任意一个发生）:
+        //TODO  a.很久没有新的关键帧了
+        //TODO  b. LocalMapping空闲
+        //TODO c.当前追踪不行了
+        //TODO condition 2:
+        //TODO  当前帧的MapPoint和ref keyframe重复率低
         // Condition 1a: More than "MaxFrames" have passed from last keyframe insertion
-        const bool c1a = mCurrentFrame.mnId>=mnLastKeyFrameId+mMaxFrames;//todo
+        const bool c1a = mCurrentFrame.mnId>=mnLastKeyFrameId+mMaxFrames;//TODO
         // Condition 1b: More than "MinFrames" have passed and Local Mapping is idle
-        const bool c1b = (mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames && bLocalMappingIdle);//todo
+        const bool c1b = (mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames && bLocalMappingIdle);//TODO
         //Condition 1c: tracking is weak
-        const bool c1c = (mnMatchesInliers<nRefMatches*0.25 || bNeedToInsertClose) ;//todo
+        const bool c1c = (mnMatchesInliers<nRefMatches*0.25 || bNeedToInsertClose) ;//TODO
         // Condition 2: Few tracked points compared to reference keyframe. Lots of visual odometry compared to map matches.
         const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| bNeedToInsertClose) && mnMatchesInliers>15);
 
@@ -1317,7 +1314,7 @@ namespace myslam
                 return true;
             else
             {
-                mpLocalMapper->InterruptBA();//todo 需要新的关键帧
+                mpLocalMapper->InterruptBA();//TODO 需要新的关键帧
                 if(mpLocalMapper->KeyframesInQueue()<3)
                     return true;
                 else
@@ -1334,12 +1331,12 @@ namespace myslam
         if(!mpLocalMapper->SetNotStop(true))
             return;
         KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
-        //todo mvpMapPoints(F.mvpMapPoints)初始化时把当前帧的mvpMapPoints给了pkf的mvpMapPoints，所以已经存在的好的地图点只需添加addobservation，不需要再addmappoint
-        mpReferenceKF = pKF;//todo 局部地图中用,当前关键帧作为参考关键帧
-        mCurrentFrame.mpReferenceKF = pKF;//todo 当前帧的参考关键帧
+        //TODO mvpMapPoints(F.mvpMapPoints)初始化时把当前帧的mvpMapPoints给了pkf的mvpMapPoints，所以已经存在的好的地图点只需添加addobservation，不需要再addmappoint
+        mpReferenceKF = pKF;//TODO 局部地图中用,当前关键帧作为参考关键帧
+        mCurrentFrame.mpReferenceKF = pKF;//TODO 当前帧的参考关键帧
         mCurrentFrame.UpdatePoseMatrices();
 
-        //todo 所有深度大于0的特征点
+        //TODO 所有深度大于0的特征点
         vector<pair<float,int> > vDepthIdx;
         vDepthIdx.reserve(mCurrentFrame.N);
         for(int i=0; i<mCurrentFrame.N; i++)
@@ -1354,14 +1351,14 @@ namespace myslam
 
         if(!vDepthIdx.empty())
         {
-            //todo 按深度值排序,从小到大，为了剔除远处的点
+            //TODO 按深度值排序,从小到大，为了剔除远处的点
             sort(vDepthIdx.begin(),vDepthIdx.end());
             int nPoints = 0;
             for(size_t j=0; j<vDepthIdx.size();j++)
             {
-                int i = vDepthIdx[j].second;//todo 第几个特征点
+                int i = vDepthIdx[j].second;//TODO 第几个特征点
                 bool bCreateNew = false;
-                //todo 如果深度大于0的特征点没有对应的地图点或者地图点没有被关键帧观测到，就重新创建
+                //TODO 如果深度大于0的特征点没有对应的地图点或者地图点没有被关键帧观测到，就重新创建
                 MapPoint* pMP = mCurrentFrame.mvpMapPoints[i];
                 if(!pMP)
                     bCreateNew = true;
@@ -1374,28 +1371,28 @@ namespace myslam
                 {
                     cv::Mat x3D = mCurrentFrame.UnprojectStereo(i);
                     MapPoint* pNewMP = new MapPoint(x3D,pKF,mpMap);
-                    pNewMP->AddObservation(pKF,i);//todo 新创建的的点添加关键帧观测
+                    pNewMP->AddObservation(pKF,i);//TODO 新创建的的点添加关键帧观测
                     pKF->AddMapPoint(pNewMP,i);
                     pNewMP->ComputeDistinctiveDescriptors();
                     pNewMP->UpdateNormalAndDepth();
                     mpMap->AddMapPoint(pNewMP);
-                    mCurrentFrame.mvpMapPoints[i]=pNewMP;//todo 重新对应上
+                    mCurrentFrame.mvpMapPoints[i]=pNewMP;//TODO 重新对应上
                     nPoints++;
                 }
                 else
                 {
                    //pMP->AddObservation(pKF,i);
-                    nPoints++;//todo 已存在的点不用添加一次观测吗？？？
+                    nPoints++;//TODO 已存在的点不用添加一次观测吗？？？
                 }
 
-                if(vDepthIdx[j].first>mThDepth && nPoints>100)//todo 排序的目的，不要深度值太大的点，而且当前关键帧观测的点数达到100
+                if(vDepthIdx[j].first>mThDepth && nPoints>100)//TODO 排序的目的，不要深度值太大的点，而且当前关键帧观测的点数达到100
                     break;
             }
         }
-        mpLocalMapper->InsertKeyFrame(pKF);//todo 在局部地图中插入关键帧
+        mpLocalMapper->InsertKeyFrame(pKF);//TODO 在局部地图中插入关键帧
         mpLocalMapper->SetNotStop(false);
-        mnLastKeyFrameId = mCurrentFrame.mnId;//todo 上一个关键帧的id是当前帧的id
-        mpLastKeyFrame = pKF;//todo 上一个关键帧就是刚创建的这个关键帧
+        mnLastKeyFrameId = mCurrentFrame.mnId;//TODO 上一个关键帧的id是当前帧的id
+        mpLastKeyFrame = pKF;//TODO 上一个关键帧就是刚创建的这个关键帧
         //cout<<"CreateNewKeyFrame:"<<mCurrentFrame.mnId<<"  "<<pKF->mnId<<endl;
     }
 
@@ -1413,9 +1410,9 @@ namespace myslam
                 }
                 else
                 {
-                    pMP->IncreaseVisible();//todo 可见次数加１
-                    pMP->mnLastFrameSeen = mCurrentFrame.mnId;//todo 上次看见这个点是在当前帧，用于去除已经匹配的点
-                    pMP->mbTrackInView = false;//todo 已经匹配的点不参与
+                    pMP->IncreaseVisible();//TODO 可见次数加１
+                    pMP->mnLastFrameSeen = mCurrentFrame.mnId;//TODO 上次看见这个点是在当前帧，用于去除已经匹配的点
+                    pMP->mbTrackInView = false;//TODO 已经匹配的点不参与
                 }
             }
         }
@@ -1429,7 +1426,7 @@ namespace myslam
             if(pMP->isBad())
                 continue;
             // Project (this fills MapPoint variables for matching)
-            //todo 判断一个点是否在视野内。如果当前的地图点在视野里，那么观测到该点的帧数加1，nToMatch计数器+1
+            //TODO 判断一个点是否在视野内。如果当前的地图点在视野里，那么观测到该点的帧数加1，nToMatch计数器+1
             if(mCurrentFrame.isInFrustum(pMP,0.5))
             {
                 pMP->IncreaseVisible();
@@ -1437,7 +1434,7 @@ namespace myslam
             }
 
         }
-        // todo 只有在视野范围内的MapPoints才参与之后的投影匹配
+        // TODO 只有在视野范围内的MapPoints才参与之后的投影匹配
         if(nToMatch>0)
         {
             ORBmatcher matcher(0.8);
@@ -1452,7 +1449,7 @@ namespace myslam
 
     void Tracking::UpdateLocalMap()
     {
-        // todo This is for visualization
+        // TODO This is for visualization
         mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
 
         // Update
@@ -1490,7 +1487,7 @@ namespace myslam
         }
 
 
-//        //todo 尝试4 将物体点放入局部点
+//        //TODO 尝试4 将物体点放入局部点
 //        for (int i = 0; i <objects.size() ; ++i)
 //        {
 //            for (int j = 0; j <mpMap->objs_real.size() ; ++j)
@@ -1526,11 +1523,11 @@ namespace myslam
 //        }
     }
 
-    void Tracking::UpdateLocalKeyFrames()//todo mvpLocalKeyFrames
+    void Tracking::UpdateLocalKeyFrames()//TODO mvpLocalKeyFrames
     {
         // Each map point vote for the keyframes in which it has been observed
-        //todo 1 得到当前帧地图点对应的观测关键帧
-        //todo 第一个表示当前帧与哪个关键帧有共视关系，第二个参数表示共视点的个数（权重）。
+        //TODO 1 得到当前帧地图点对应的观测关键帧
+        //TODO 第一个表示当前帧与哪个关键帧有共视关系，第二个参数表示共视点的个数（权重）。
         map<KeyFrame*,int> keyframeCounter;
         for(int i=0; i<mCurrentFrame.N; i++)
         {
@@ -1557,7 +1554,7 @@ namespace myslam
         mvpLocalKeyFrames.clear();
         mvpLocalKeyFrames.reserve(3*keyframeCounter.size());
         // All keyframes that observe a map point are included in the local map. Also check which keyframe shares most points
-        //todo 2 得到共同观测点数最多的关键帧
+        //TODO 2 得到共同观测点数最多的关键帧
         for(map<KeyFrame*,int>::const_iterator it=keyframeCounter.begin(), itEnd=keyframeCounter.end(); it!=itEnd; it++)
         {
             KeyFrame* pKF = it->first;
@@ -1572,13 +1569,13 @@ namespace myslam
             }
 
             mvpLocalKeyFrames.push_back(it->first);
-            pKF->mnTrackReferenceForFrame = mCurrentFrame.mnId;//todo 为了判断是不是第一次共识关系加入的
+            pKF->mnTrackReferenceForFrame = mCurrentFrame.mnId;//TODO 为了判断是不是第一次共识关系加入的
         }
-        //todo 3 得到局部关键帧相连的关键帧10个,父关键帧，子关键帧
+        //TODO 3 得到局部关键帧相连的关键帧10个,父关键帧，子关键帧
         for(vector<KeyFrame*>::const_iterator itKF=mvpLocalKeyFrames.begin(), itEndKF=mvpLocalKeyFrames.end(); itKF!=itEndKF; itKF++)
         {
-            // todo Limit the number of keyframes
-            // todo 可以提高
+            // TODO Limit the number of keyframes
+            // TODO 可以提高
             if(mvpLocalKeyFrames.size()>80)
                 break;
 
@@ -1628,7 +1625,7 @@ namespace myslam
 
         if(pKFmax)
         {
-            mpReferenceKF = pKFmax;//todo 和当前帧共同可见点数最多的参考关键帧
+            mpReferenceKF = pKFmax;//TODO 和当前帧共同可见点数最多的参考关键帧
             mCurrentFrame.mpReferenceKF = mpReferenceKF;
         }
 

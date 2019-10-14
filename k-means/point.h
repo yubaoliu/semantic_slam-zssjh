@@ -7,13 +7,12 @@
 
 class K_Keypoint
 {
-
 public:
-    K_Keypoint(cv::KeyPoint kp, double depthval, bool background) :kp(kp),depthval(depthval),background(background) {}
+    K_Keypoint(cv::KeyPoint kp, double depthval, bool background) : kp(kp), depthval(depthval), background(background) {}
+
 public:
     double depthval;
     cv::KeyPoint kp;
     bool background;
-
 };
 #endif //K_MEANS_POINT_H
